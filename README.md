@@ -1,107 +1,100 @@
 # KomiVerse
 
-KomiVerse is a full-stack media reading platform built with Flutter + Go, with a self-hosted anime provider service.
+**A Full-Stack Media Consumption Platform** built with **Go** (Backend) + **Flutter** (Mobile App).
 
-This repository is portfolio-focused for internship applications and demonstrates:
-- Mobile app architecture and UX implementation in Flutter
-- API and scraping system design in Go
-- Multi-service local development workflow
-- Practical configuration, caching, retry, and observability patterns
+A personal project focused on building scalable backend systems and smooth mobile experiences for reading manga, novels, and watching anime.
 
-## Project Status
-- Client: actively implemented with core manga/anime/extension flows
-- Backend API: working multi-source Go service
-- Provider service: self-hosted Consumet-compatible API included
-- Public deployment: intentionally disabled (no public APK and no public API URL)
+## 🚀 Project Highlights
 
-## Repository Layout
+- Production-grade **Go backend** with resilient scraping architecture
+- Modern **Flutter** mobile application with complete manga reading flow
+- Multi-service local development setup
+- Strong emphasis on clean architecture, reliability, and observability
+
+## 🛠 Tech Stack
+
+**Backend**
+- Go (Gin Framework)
+- GoQuery (HTML parsing)
+- Prometheus Metrics
+- Rate Limiting & Caching
+- Docker & Docker Compose
+
+**Frontend**
+- Flutter + Dart
+- Riverpod (State Management)
+- Dio (Networking)
+- go_router + PhotoView (Reader)
+
+**Other**
+- Structured Logging
+- Async Job Processing
+- Modular Source Registry
+
+## ✨ Key Features
+
+### Backend
+- Unified REST API for Manga, Novels & Anime
+- Pluggable scraper system (11+ sources)
+- Advanced resilience: retries with jitter, per-domain rate limiting, circuit breaker
+- TTL Cache with stale fallback
+- Async jobs with polling support
+- Prometheus metrics & health checks
+
+### Frontend
+- Beautiful dark-themed UI with bottom navigation
+- Complete Manga flow: Browse → Detail → Chapter Reader
+- Vertical & Horizontal reading modes with zoom
+- Local reading progress persistence
+- Extension management system
+- Runtime backend URL configuration
+
+## 📁 Repository Structure
+
 ```text
 komiverse/
-  frontend/                   # Flutter mobile app
-  Huang/backend-go/           # Go API (scrapers, caching, jobs, metrics)
-  Huang/api.consumet.org/     # Consumet-compatible provider service (TypeScript)
-  README.md
-  IMPLEMENTATION_SUMMARY.md
-  docs/
-```
+├── backend/                    # Go API + scrapers
+├── frontend/                   # Flutter mobile app
+├── Huang/api.consumet.org/     # Self-hosted anime provider
+├── docker-compose.yml
+└── docs/                       # Architecture & implementation notes
+⚠️ Important Disclaimer
+This project is built for educational and portfolio purposes only.
+It scrapes publicly available data from various websites. Please respect all websites' robots.txt and Terms of Service. No copyrighted content is hosted or distributed.
+🚀 How to Run Locally
+Prerequisites
 
-## Architecture
-```text
-Flutter App (frontend)
-  -> Go API (Huang/backend-go)
-      -> Manga + Novel scrapers
-      -> Anime provider adapter
-          -> Consumet-compatible API (Huang/api.consumet.org)
-```
+Go 1.24+
+Flutter SDK
+Node.js (for anime provider)
 
-Detailed technical notes:
-- [Architecture](/docs/ARCHITECTURE.md)
-- [Implementation Summary](/IMPLEMENTATION_SUMMARY.md)
-
-## Key Features
-- Animated splash + onboarding flow
-- Bottom navigation shell with Manga, Anime, Novel, History, Extensions, More
-- Manga browse -> detail -> chapter reader with:
-  - Vertical/horizontal reading modes
-  - Saved per-chapter reading progress
-- Anime browse and detail with episode listing
-- Backend URL configuration from app settings at runtime
-- Default source selection per media type (manga/anime/novel)
-- Theme mode + reading direction preferences persisted locally
-- Extension browse/install/uninstall flows backed by API
-
-## Tech Stack
-- Mobile: Flutter, Dart, Riverpod, go_router
-- API Client: Dio
-- Backend: Go, Gin, GoQuery
-- Provider Service: Node.js + TypeScript + Fastify (Consumet-compatible)
-- Persistence: SharedPreferences (mobile), in-memory TTL/cache/jobs (backend)
-- Infra: Docker Compose (backend + provider templates)
-
-## Run Locally
-Use 3 terminals.
-
-### 1. Start anime provider service (port 3000)
-```powershell
-cd Huang\api.consumet.org
+Setup
+1. Anime Provider
+Bashcd Huang/api.consumet.org
 npm install
 npm run dev
-```
-
-### 2. Start Go backend (recommended on port 8081 for mobile defaults)
-```powershell
-cd Huang\backend-go
-$env:PORT="8081"
-$env:CONSUMET_BASE_URL="http://localhost:3000/anime"
+2. Go Backend
+Bashcd backend
 go run ./cmd/server
-```
-
-### 3. Start Flutter app
-```powershell
-cd frontend
+3. Flutter App
+Bashcd frontend
 flutter pub get
-flutter run --dart-define=BACKEND_BASE_URL=http://127.0.0.1:8081
-```
+flutter run
+📸 Screenshots
+(Add your screenshots here)
+<img src="screenshots/manga-list.png" alt="Manga List">
+<img src="screenshots/manga-reader.png" alt="Manga Reader">
+<img src="screenshots/api-health.png" alt="Backend Health">
+What I Learned
 
-For Android physical device via USB:
-```powershell
-adb reverse tcp:8081 tcp:8081
-```
+Designing resilient and observable backend systems in Go
+Building maintainable scraper engines
+Full-stack development with proper separation of concerns
+Implementing production-grade patterns (rate limiting, caching, async processing, graceful shutdown)
 
-## Why No Live APK / Public API
-This repository is intentionally self-hosted for safety and legal control:
-- No public scraping API endpoint
-- No publicly shared APK
-- Reviewers can run everything locally from source
+Future Plans
 
-## Documentation
-- [GitHub Publishing Checklist](/docs/GITHUB_PUBLISH_CHECKLIST.md)
-- [Internship Showcase Notes](/docs/INTERNSHIP_SHOWCASE.md)
-- [Architecture](/docs/ARCHITECTURE.md)
-- [Implementation Summary](/IMPLEMENTATION_SUMMARY.md)
-
-## Roadmap
-- Complete anime streaming playback integration
-- Build real history sync across manga/anime/novel
-- Add automated tests across mobile + backend flows
-- Add CI pipeline (lint, analyze, build, smoke tests)
+Complete anime video playback
+History & Library synchronization
+Automated tests
+CI/CD pipeline
