@@ -1,0 +1,145 @@
+services:
+  api:
+    container_name: huang-api
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      consumet:
+        condition: service_healthy
+    environment:
+      # Internal app listen port inside the container.
+      # Keep this separate from host published ports.
+      PORT: ${APP_PORT:-8080}
+      ENABLE_DEBUG_ROUTES: ${ENABLE_DEBUG_ROUTES:-false}
+      MAX_PAGE: ${MAX_PAGE:-100}
+      METRICS_ENABLED: ${METRICS_ENABLED:-true}
+      CACHE_ENABLED: ${CACHE_ENABLED:-true}
+      CACHE_TTL: ${CACHE_TTL:-2m}
+      CACHE_MAX_ENTRIES: ${CACHE_MAX_ENTRIES:-5000}
+      ASYNC_ENABLED: ${ASYNC_ENABLED:-false}
+      ASYNC_WORKERS: ${ASYNC_WORKERS:-4}
+      ASYNC_QUEUE_SIZE: ${ASYNC_QUEUE_SIZE:-512}
+      ASYNC_JOB_TIMEOUT: ${ASYNC_JOB_TIMEOUT:-25s}
+      ASYNC_JOB_TTL: ${ASYNC_JOB_TTL:-15m}
+      GLOBAL_RATE_LIMIT_RPS: ${GLOBAL_RATE_LIMIT_RPS:-100}
+      GLOBAL_RATE_LIMIT_BURST: ${GLOBAL_RATE_LIMIT_BURST:-200}
+      PER_IP_RATE_LIMIT_RPS: ${PER_IP_RATE_LIMIT_RPS:-20}
+      PER_IP_RATE_LIMIT_BURST: ${PER_IP_RATE_LIMIT_BURST:-40}
+      SCRAPE_TIMEOUT_SECONDS: ${SCRAPE_TIMEOUT_SECONDS:-15}
+      SCRAPE_RETRY_COUNT: ${SCRAPE_RETRY_COUNT:-1}
+      SCRAPE_RETRY_BASE_DELAY: ${SCRAPE_RETRY_BASE_DELAY:-250ms}
+      SCRAPE_MIN_DELAY: ${SCRAPE_MIN_DELAY:-120ms}
+      SCRAPE_MAX_DELAY: ${SCRAPE_MAX_DELAY:-350ms}
+      SCRAPE_DOMAIN_RPS: ${SCRAPE_DOMAIN_RPS:-4}
+      SCRAPE_DOMAIN_BURST: ${SCRAPE_DOMAIN_BURST:-8}
+      SCRAPE_FAIL_THRESHOLD: ${SCRAPE_FAIL_THRESHOLD:-6}
+      SCRAPE_COOLDOWN: ${SCRAPE_COOLDOWN:-2m}
+      SCRAPE_RESPECT_ROBOTS: ${SCRAPE_RESPECT_ROBOTS:-false}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-*}
+      TRUSTED_PROXIES: ${TRUSTED_PROXIES:-127.0.0.1/32,::1/128,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16}
+      READ_TIMEOUT: ${READ_TIMEOUT:-15s}
+      WRITE_TIMEOUT: ${WRITE_TIMEOUT:-120s}
+      IDLE_TIMEOUT: ${IDLE_TIMEOUT:-90s}
+      SHUTDOWN_TIMEOUT: ${SHUTDOWN_TIMEOUT:-20s}
+      # Consumet is required for anime endpoints.
+      CONSUMET_BASE_URL: ${CONSUMET_BASE_URL:-http://consumet:3000/anime}
+    expose:
+      # Internal port only - Nginx proxies to this.
+      # For direct host access during local dev, use the 'dev' profile:
+      #   docker compose --profile dev up -d
+      - "${APP_PORT:-8080}"
+    restart: unless-stopped
+
+  # Direct API access for local development (no Nginx)
+  # Usage: docker compose --profile dev up --build
+  api-dev-port:
+    extends:
+      service: api
+    profiles: ["dev"]
+    depends_on:
+      consumet:
+        condition: service_healthy
+    ports:
+      # Host port for local dev access (host:container).
+      - "${DEV_PORT:-8081}:${APP_PORT:-8080}"
+    container_name: huang-api-dev
+
+  # Consumet provider API used by anime scrapers.
+  consumet:
+    build:
+      context: ../api.consumet.org
+      dockerfile: Dockerfile
+    container_name: huang-consumet
+    environment:
+      NODE_ENV: PROD
+      PORT: 3000
+    expose:
+      - "3000"
+    dns:
+      - 1.1.1.1
+      - 8.8.8.8
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - node -e "require('http').get('http://127.0.0.1:3000/',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))"
+      interval: 20s
+      timeout: 8s
+      retries: 6
+      start_period: 40s
+    restart: unless-stopped
+
+  # Nginx edge (HTTP only, includes ACME challenge path for first cert bootstrap)
+  # Usage: docker compose --profile edge up -d
+  nginx:
+    image: nginx:1.27-alpine
+    profiles: ["edge"]
+    depends_on:
+      - api
+    ports:
+      - "${NGINX_PORT:-80}:80"
+    environment:
+      DOMAIN: ${DOMAIN:-localhost}
+    volumes:
+      - ./deploy/nginx.http.conf.template:/etc/nginx/templates/default.conf.template:ro
+      - certbot-webroot:/var/www/certbot
+    restart: unless-stopped
+
+  # Nginx edge with TLS (Let's Encrypt)
+  # Usage: docker compose --profile edge-tls up -d
+  nginx-tls:
+    image: nginx:1.27-alpine
+    profiles: ["edge-tls"]
+    depends_on:
+      - api
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMAIN: ${DOMAIN:-localhost}
+    volumes:
+      - ./deploy/nginx.tls.conf.template:/etc/nginx/templates/default.conf.template:ro
+      - certbot-webroot:/var/www/certbot:ro
+      - letsencrypt:/etc/letsencrypt:ro
+    restart: unless-stopped
+
+  # Certbot renew loop for existing certificates.
+  certbot:
+    image: certbot/certbot:latest
+    profiles: ["edge-tls"]
+    depends_on:
+      - nginx-tls
+    volumes:
+      - certbot-webroot:/var/www/certbot
+      - letsencrypt:/etc/letsencrypt
+    entrypoint: >
+      sh -c "trap exit TERM;
+             while :; do
+               certbot renew --webroot -w /var/www/certbot --quiet;
+               sleep 12h & wait $${!};
+             done"
+    restart: unless-stopped
+
+volumes:
+  certbot-webroot:
+  letsencrypt:

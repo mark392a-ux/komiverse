@@ -1,0 +1,30 @@
+# Go binaries
+bin/
+huang-server
+
+# Environment files (contains secrets - never commit the real .env)
+.env
+
+# Debug / scratch files
+tmp_novelfull.html
+tmp_*.html
+tmp_*.json
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Build artifacts
+*.exe
+*.test
+coverage/
+
+# Certbot / TLS volumes (mounted at runtime, not tracked)
+deploy/certbot/
+deploy/letsencrypt/

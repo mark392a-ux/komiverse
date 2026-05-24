@@ -1,0 +1,391 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Anime Finder</title>
+  <style>
+    :root {
+      --bg: #f4efe6;
+      --paper: #fff8ef;
+      --ink: #1f1a14;
+      --muted: #6f665b;
+      --accent: #d85a3a;
+      --accent-2: #f0a04b;
+      --line: #e2d6c5;
+      --ok: #157347;
+      --err: #b42318;
+      --shadow: 0 12px 32px rgba(31, 26, 20, 0.12);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Trebuchet MS", "Segoe UI", Tahoma, sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 15% 20%, rgba(240, 160, 75, 0.25) 0, transparent 32%),
+        radial-gradient(circle at 85% 10%, rgba(216, 90, 58, 0.2) 0, transparent 38%),
+        linear-gradient(145deg, var(--bg), #f1e7db 55%, #f9f0e7);
+      min-height: 100vh;
+    }
+
+    .wrap {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 28px 18px 40px;
+    }
+
+    .hero {
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      box-shadow: var(--shadow);
+      padding: 20px 18px;
+      margin-bottom: 16px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(1.5rem, 2.6vw, 2.1rem);
+      letter-spacing: 0.02em;
+    }
+
+    .sub {
+      margin: 8px 0 0;
+      color: var(--muted);
+    }
+
+    .controls {
+      display: grid;
+      gap: 10px;
+      grid-template-columns: 1.7fr 0.9fr 0.9fr 0.6fr 0.9fr;
+      margin-top: 16px;
+    }
+
+    @media (max-width: 920px) {
+      .controls {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    @media (max-width: 560px) {
+      .controls {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .field label {
+      font-size: 0.84rem;
+      color: var(--muted);
+      font-weight: 600;
+      letter-spacing: 0.01em;
+    }
+
+    input, select, button {
+      border-radius: 10px;
+      border: 1px solid var(--line);
+      padding: 10px 12px;
+      font-size: 0.95rem;
+      background: #fff;
+      color: var(--ink);
+    }
+
+    input:focus, select:focus, button:focus {
+      outline: 2px solid rgba(216, 90, 58, 0.24);
+      outline-offset: 1px;
+      border-color: #d8a46a;
+    }
+
+    button {
+      border: 0;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      color: #fff;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 8px 18px rgba(216, 90, 58, 0.24);
+      transition: transform 0.16s ease, box-shadow 0.16s ease;
+      align-self: end;
+      min-height: 42px;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 12px 24px rgba(216, 90, 58, 0.28);
+    }
+
+    .status {
+      margin: 14px 0 8px;
+      min-height: 1.4em;
+      font-size: 0.95rem;
+      color: var(--muted);
+    }
+
+    .status.ok {
+      color: var(--ok);
+    }
+
+    .status.err {
+      color: var(--err);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(176px, 1fr));
+      gap: 14px;
+      margin-top: 8px;
+    }
+
+    .card {
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 8px 18px rgba(31, 26, 20, 0.08);
+      transform: translateY(10px);
+      opacity: 0;
+      animation: rise 0.28s ease forwards;
+    }
+
+    @keyframes rise {
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+
+    .poster {
+      width: 100%;
+      aspect-ratio: 3 / 4;
+      object-fit: cover;
+      background: #efe4d6;
+    }
+
+    .meta {
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .title {
+      margin: 0;
+      font-size: 0.94rem;
+      line-height: 1.3;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      min-height: 2.5em;
+    }
+
+    .chip {
+      display: inline-block;
+      font-size: 0.75rem;
+      color: #784f2e;
+      background: #f6e1c7;
+      border: 1px solid #edcdac;
+      border-radius: 999px;
+      padding: 2px 8px;
+      max-width: max-content;
+    }
+
+    .id {
+      margin: 0;
+      font-size: 0.74rem;
+      color: var(--muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <section class="hero">
+      <h1>Anime Finder</h1>
+      <p class="sub">Search anime titles or browse popular/latest from your backend sources.</p>
+
+      <form id="search-form" class="controls">
+        <div class="field">
+          <label for="q">Search keyword</label>
+          <input id="q" name="q" placeholder="Try: naruto, one piece, bleach">
+        </div>
+
+        <div class="field">
+          <label for="mode">Mode</label>
+          <select id="mode" name="mode">
+            <option value="search">Search</option>
+            <option value="popular">Browse Popular</option>
+            <option value="latest">Browse Latest</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="source">Source</label>
+          <select id="source" name="source"></select>
+        </div>
+
+        <div class="field">
+          <label for="page">Page</label>
+          <input id="page" name="page" type="number" min="1" value="1">
+        </div>
+
+        <button id="submit-btn" type="submit">Find Anime</button>
+      </form>
+
+      <p id="status" class="status"></p>
+    </section>
+
+    <section id="results" class="grid" aria-live="polite"></section>
+  </main>
+
+  <script>
+    const form = document.getElementById("search-form");
+    const sourceEl = document.getElementById("source");
+    const modeEl = document.getElementById("mode");
+    const qEl = document.getElementById("q");
+    const pageEl = document.getElementById("page");
+    const statusEl = document.getElementById("status");
+    const resultsEl = document.getElementById("results");
+    const submitBtn = document.getElementById("submit-btn");
+
+    let animeSources = [];
+
+    function setStatus(message, tone) {
+      statusEl.textContent = message || "";
+      statusEl.className = "status";
+      if (tone) {
+        statusEl.classList.add(tone);
+      }
+    }
+
+    function escapeHtml(text) {
+      return String(text ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll("\"", "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function renderResults(items) {
+      resultsEl.innerHTML = "";
+      if (!Array.isArray(items) || items.length === 0) {
+        setStatus("No results found. Try a different keyword or source.", "err");
+        return;
+      }
+
+      const cardHtml = items.map((item, index) => {
+        const title = escapeHtml(item.title || "Untitled");
+        const cover = escapeHtml(item.cover_url || "");
+        const id = escapeHtml(item.id || "");
+        const latest = escapeHtml(item.latest_chap || "");
+        const delay = (index % 12) * 0.03;
+
+        return `
+          <article class="card" style="animation-delay:${delay}s">
+            <img class="poster" loading="lazy" src="${cover}" alt="${title}" onerror="this.style.display='none'">
+            <div class="meta">
+              <h3 class="title">${title}</h3>
+              ${latest ? `<span class="chip">${latest}</span>` : ""}
+              <p class="id" title="${id}">${id}</p>
+            </div>
+          </article>
+        `;
+      }).join("");
+
+      resultsEl.innerHTML = cardHtml;
+      setStatus(`Found ${items.length} anime item(s).`, "ok");
+    }
+
+    async function fetchAnimeSources() {
+      const res = await fetch("/api/sources");
+      const data = await res.json();
+      const list = Array.isArray(data.sources) ? data.sources : [];
+      animeSources = list.filter((s) => s.type === "anime");
+
+      if (animeSources.length === 0) {
+        sourceEl.innerHTML = "<option value=''>No anime sources found</option>";
+        sourceEl.disabled = true;
+        submitBtn.disabled = true;
+        setStatus("No anime sources are registered in backend.", "err");
+        return;
+      }
+
+      sourceEl.innerHTML = animeSources
+        .map((s) => `<option value="${escapeHtml(s.id)}">${escapeHtml(s.name)} (${escapeHtml(s.id)})</option>`)
+        .join("");
+      sourceEl.disabled = false;
+      submitBtn.disabled = false;
+    }
+
+    function buildUrl() {
+      const source = sourceEl.value;
+      const mode = modeEl.value;
+      const page = Math.max(1, Number(pageEl.value || "1"));
+      const q = qEl.value.trim();
+
+      if (mode === "search") {
+        if (!q) {
+          throw new Error("Enter a keyword for search mode.");
+        }
+        return `/api/search?source=${encodeURIComponent(source)}&q=${encodeURIComponent(q)}&page=${page}`;
+      }
+
+      return `/api/browse?source=${encodeURIComponent(source)}&sort=${encodeURIComponent(mode)}&page=${page}`;
+    }
+
+    modeEl.addEventListener("change", () => {
+      if (modeEl.value === "search") {
+        qEl.removeAttribute("disabled");
+        qEl.setAttribute("placeholder", "Try: naruto, one piece, bleach");
+      } else {
+        qEl.setAttribute("disabled", "disabled");
+        qEl.setAttribute("placeholder", "Keyword is used only in search mode");
+      }
+    });
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      setStatus("Loading...");
+      resultsEl.innerHTML = "";
+
+      try {
+        const url = buildUrl();
+        const res = await fetch(url);
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.error || "Request failed.");
+        }
+
+        renderResults(data.items || []);
+      } catch (err) {
+        setStatus(err.message || "Failed to fetch anime results.", "err");
+      }
+    });
+
+    (async function init() {
+      setStatus("Loading anime sources...");
+      try {
+        await fetchAnimeSources();
+        modeEl.dispatchEvent(new Event("change"));
+        setStatus("Ready. Search anime now.");
+      } catch (err) {
+        setStatus("Failed to load sources from backend.", "err");
+      }
+    })();
+  </script>
+</body>
+</html>
