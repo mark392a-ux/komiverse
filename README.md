@@ -64,7 +64,7 @@ The Flutter app resolves the backend URL at runtime (from settings or reachable 
 - Prometheus-style metrics endpoint
 - Built-in browser UI at `/anime` for quick testing
 
----
+----
 
 ## Tech Stack
 
